@@ -3,9 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>VoltaGrid Shipment Status</title>
+<title>VoltaGrid Delivery Portal — REV Engineering</title>
 <style>
   :root{
+    /* REV brand */
+    --rev-navy:#0B2545; --rev-navy-dark:#071A33; --rev-blue:#1D4E89;
+    --rev-teal:#0E8A7D; --rev-gold:#D9A441;
+    --rev-bg:#F4F6F9; --rev-panel:#FFFFFF; --rev-border:#E2E8F0;
+
+    /* internal (neutral working) palette, reused from v1 */
     --bg:#F3F5F8; --panel:#FFFFFF; --border:#E3E8EF; --border-strong:#CBD5E1;
     --text:#111827; --text-muted:#64748B; --text-faint:#94A3B8;
     --accent:#2F5FA3; --accent-dark:#1B3B6F; --accent-light:#DCE8F7;
@@ -20,19 +26,135 @@
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif;}
-  body{padding:28px 32px 60px;max-width:1540px;margin:0 auto;}
+  body{padding-bottom:60px;}
+  .wrap{max-width:1540px;margin:0 auto;padding:0 32px 0;}
 
-  .header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;gap:20px;flex-wrap:wrap;}
-  .header h1{margin:0 0 4px;font-size:23px;font-weight:800;letter-spacing:-.01em;}
-  .header .sub{font-size:13px;color:var(--text-muted);}
-  .header .meta{font-size:12px;color:var(--text-faint);text-align:right;line-height:1.6;}
-  .header .meta b{color:var(--text-muted);}
+  /* ===================== View switcher bar ===================== */
+  .switcher-bar{background:var(--rev-navy);padding:10px 32px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+  .switcher-bar .brandmark{display:flex;align-items:center;gap:9px;color:white;font-weight:800;font-size:14px;letter-spacing:.01em;margin-right:auto;}
+  .brandmark .logo-sq{width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,var(--rev-gold),var(--rev-teal));
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:var(--rev-navy);}
+  .seg{display:flex;background:rgba(255,255,255,.08);border-radius:9px;padding:3px;gap:2px;}
+  .seg button{border:none;background:transparent;color:rgba(255,255,255,.65);font-size:12.5px;font-weight:700;
+    padding:7px 16px;border-radius:7px;cursor:pointer;font-family:inherit;transition:all .12s;}
+  .seg button.active{background:white;color:var(--rev-navy);}
+  .seg button:not(.active):hover{color:white;}
+  .switcher-note{font-size:11px;color:rgba(255,255,255,.45);}
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  /* ===================== CUSTOMER VIEW (REV branded) ===================== */
+  #customerView .cv-hero{background:linear-gradient(135deg,var(--rev-navy) 0%,var(--rev-blue) 100%);color:white;
+    padding:36px 32px 42px;}
+  #customerView .cv-hero-inner{max-width:1540px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;}
+  #customerView .cv-hero h1{margin:0 0 6px;font-size:26px;font-weight:800;letter-spacing:-.01em;}
+  #customerView .cv-hero .sub{font-size:13.5px;color:rgba(255,255,255,.75);max-width:560px;line-height:1.5;}
+  #customerView .cv-hero .meta{font-size:12px;color:rgba(255,255,255,.6);text-align:right;line-height:1.7;}
+  #customerView .cv-hero .meta b{color:white;}
+  #customerView .cv-body{max-width:1540px;margin:0 auto;padding:28px 32px 10px;}
+
+  .cv-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:-56px;}
+  .cv-kpi{background:var(--rev-panel);border:1px solid var(--rev-border);border-radius:14px;padding:18px 20px;
+    box-shadow:0 10px 24px rgba(11,37,69,.12);cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s;}
+  .cv-kpi:hover{transform:translateY(-2px);box-shadow:0 14px 28px rgba(11,37,69,.18);}
+  .cv-kpi.active{border-color:var(--rev-blue);box-shadow:0 0 0 2px rgba(29,78,137,.18),0 10px 24px rgba(11,37,69,.12);}
+  .cv-kpi .val{font-size:28px;font-weight:800;color:var(--rev-navy);letter-spacing:-.02em;}
+  .cv-kpi .lbl{font-size:12px;color:var(--text-muted);font-weight:600;margin-top:5px;}
+  .cv-kpi .sub{font-size:11px;color:var(--text-faint);margin-top:2px;}
+  .cv-kpi .caret{font-size:10px;color:var(--rev-blue);font-weight:700;margin-top:8px;opacity:0;transition:opacity .12s;}
+  .cv-kpi:hover .caret,.cv-kpi.active .caret{opacity:1;}
+
+  .cv-section-label{font-size:11.5px;font-weight:800;color:var(--rev-navy);text-transform:uppercase;letter-spacing:.07em;margin:34px 0 12px;}
+
+  .cv-fleet-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .cv-fleet-card{background:var(--rev-panel);border:1px solid var(--rev-border);border-radius:14px;padding:20px 22px;box-shadow:var(--shadow);
+    cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s;}
+  .cv-fleet-card:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(11,37,69,.1);}
+  .cv-fleet-card.active{border-color:var(--rev-blue);box-shadow:0 0 0 2px rgba(29,78,137,.18);}
+  .cv-fleet-card .cft{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;}
+  .cv-fleet-card .cft b{font-size:17px;font-weight:800;color:var(--rev-navy);}
+  .cv-fleet-card .cfsub{font-size:11.5px;color:var(--text-faint);margin-bottom:14px;}
+  .cv-ring-row{display:flex;align-items:center;gap:16px;}
+  .cv-ring{flex-shrink:0;}
+  .cv-ring-stats{flex:1;}
+  .cv-ring-stats .big{font-size:21px;font-weight:800;color:var(--rev-navy);}
+  .cv-ring-stats .small{font-size:11.5px;color:var(--text-muted);margin-top:2px;}
+  .cv-status-pill{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:5px 11px;border-radius:999px;font-size:11px;font-weight:700;}
+  .cv-status-pill.ontrack{background:var(--green-bg);color:var(--green);}
+  .cv-status-pill.watch{background:var(--amber-bg);color:var(--amber);}
+  .cv-status-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+  .cv-panel{background:var(--rev-panel);border:1px solid var(--rev-border);border-radius:14px;box-shadow:var(--shadow);padding:20px 22px;margin-top:16px;}
+  .cv-panel h2{margin:0 0 2px;font-size:14.5px;font-weight:700;color:var(--rev-navy);}
+  .cv-panel .cv-panel-sub{font-size:11.5px;color:var(--text-muted);margin-bottom:14px;}
+
+  .cv-table-wrap{margin-top:16px;}
+  table.cv-table{width:100%;border-collapse:collapse;background:var(--rev-panel);border:1px solid var(--rev-border);border-radius:12px;overflow:hidden;}
+  table.cv-table thead th{background:var(--rev-navy);color:white;font-size:10.8px;font-weight:700;text-align:left;padding:10px 14px;
+    text-transform:uppercase;letter-spacing:.04em;}
+  table.cv-table tbody td{padding:9px 14px;font-size:12.5px;border-top:1px solid var(--rev-border);}
+  table.cv-table tbody tr:hover td{background:#F8FAFC;}
+  .cv-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:26px 0 12px;}
+  .cv-toolbar select,.cv-toolbar input{padding:8px 12px;border:1px solid var(--border-strong);border-radius:8px;font-size:12.5px;font-family:inherit;outline:none;background:white;}
+  .cv-toolbar input:focus,.cv-toolbar select:focus{border-color:var(--rev-blue);}
+  .cv-toolbar .count{margin-left:auto;font-size:12px;color:var(--text-muted);}
+  .cv-badge{display:inline-flex;padding:3px 10px;border-radius:999px;font-size:10.5px;font-weight:700;}
+  .cv-badge.shipped{background:var(--green-bg);color:var(--green);}
+  .cv-badge.progress{background:var(--accent-light);color:var(--accent-dark);}
+  .cv-badge.scheduled{background:#F1F5F9;color:var(--text-faint);}
+  .cv-type-pill{display:inline-flex;padding:2px 9px;border-radius:999px;font-size:10px;font-weight:800;color:white;}
+  .cv-chips{display:flex;gap:6px;flex-wrap:wrap;}
+  .cv-chip{display:inline-flex;align-items:center;gap:6px;background:rgba(29,78,137,.1);color:var(--rev-blue);
+    border-radius:999px;padding:5px 10px 5px 12px;font-size:11.5px;font-weight:600;}
+  .cv-chip .x{cursor:pointer;width:15px;height:15px;border-radius:50%;background:rgba(29,78,137,.15);
+    display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;}
+  .cv-chip .x:hover{background:rgba(29,78,137,.3);}
+  .cv-clear-all{font-size:11.5px;color:var(--rev-blue);cursor:pointer;font-weight:600;}
+  .expand-chevron{display:inline-block;width:16px;color:var(--text-faint);transition:transform .15s;font-size:10px;}
+  tr.expanded .expand-chevron{transform:rotate(90deg);}
+  tr.cv-expand-row td,tr.iv-expand-row td{background:#F8FAFC;padding:16px 20px;border-top:none;}
+  .timeline-wrap{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;}
+  .mini-timeline{display:flex;flex:1;min-width:420px;}
+  .mini-step{flex:1;text-align:center;position:relative;padding-top:6px;}
+  .mini-line{position:absolute;top:11px;left:-50%;width:100%;height:2px;background:#E2E8F0;z-index:0;}
+  .mini-step:first-child .mini-line{display:none;}
+  .mini-step.done .mini-line{background:var(--rev-teal);}
+  .mini-dot{width:11px;height:11px;border-radius:50%;margin:0 auto 6px;background:#CBD5E1;border:2px solid white;
+    box-shadow:0 0 0 1.5px #CBD5E1;position:relative;z-index:1;}
+  .mini-step.done .mini-dot{background:var(--rev-teal);box-shadow:0 0 0 1.5px var(--rev-teal);}
+  .mini-step.current .mini-dot{background:var(--rev-gold);box-shadow:0 0 0 4px rgba(217,164,65,.22);}
+  .mini-label{font-size:9.5px;color:var(--text-faint);line-height:1.3;padding:0 2px;}
+  .mini-step.done .mini-label,.mini-step.current .mini-label{color:var(--rev-navy);font-weight:700;}
+  .mini-date{font-size:9px;color:var(--text-faint);margin-top:1px;}
+  .expand-side{min-width:200px;font-size:12px;color:var(--text-muted);line-height:1.9;}
+  .expand-side b{color:var(--text);}
+  .expand-side .es-row{display:flex;justify-content:space-between;gap:16px;}
+  .expand-flagline{margin-top:8px;padding:7px 10px;background:var(--red-bg);color:var(--red);border-radius:7px;font-size:11.5px;font-weight:600;}
+  .expand-cvline{margin-top:8px;padding:7px 10px;background:var(--accent-light);color:var(--accent-dark);border-radius:7px;font-size:11px;}
+
+  .cv-footer{text-align:center;padding:30px 20px 6px;color:var(--text-faint);font-size:11.5px;}
+  .cv-footer b{color:var(--rev-navy);}
+
+  svg.cv-trend{width:100%;height:190px;overflow:visible;}
+  .cv-trend-axis-label{font-size:10px;fill:var(--text-faint);font-family:inherit;}
+  .cv-trend-legend{display:flex;gap:16px;font-size:11px;color:var(--text-muted);margin-top:10px;}
+  .cv-trend-legend span{display:inline-flex;align-items:center;gap:5px;}
+  .sw{width:9px;height:9px;border-radius:2px;display:inline-block;}
+
+  /* ===================== INTERNAL VIEW (reuse v1 styling) ===================== */
+  #internalView .iv-banner{background:var(--amber-bg);color:var(--amber);font-size:11.5px;font-weight:700;
+    text-align:center;padding:7px;letter-spacing:.02em;}
+  #internalView .header{display:flex;justify-content:space-between;align-items:flex-end;margin:22px 0 20px;gap:20px;flex-wrap:wrap;}
+  #internalView .header h1{margin:0 0 4px;font-size:23px;font-weight:800;letter-spacing:-.01em;}
+  #internalView .header .sub{font-size:13px;color:var(--text-muted);}
+  #internalView .header .meta{font-size:12px;color:var(--text-faint);text-align:right;line-height:1.6;}
+  #internalView .header .meta b{color:var(--text-muted);}
   .mock-badge{display:inline-block;background:var(--amber-bg);color:var(--amber);font-size:10.5px;font-weight:800;
     padding:3px 9px;border-radius:999px;letter-spacing:.03em;margin-left:9px;vertical-align:2px;}
 
   .section-label{font-size:11px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin:28px 0 10px;}
 
-  /* KPI row */
   .kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;}
   .kpi{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;
     box-shadow:var(--shadow);cursor:pointer;transition:transform .12s,box-shadow .12s;}
@@ -46,7 +168,6 @@
   .kpi.bad .val{color:var(--red);}
   .kpi.neutral .val{color:var(--accent-dark);}
 
-  /* Fleet progress bars */
   .fleet-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;}
   .fleet-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);
     padding:16px 18px;cursor:pointer;transition:all .12s;}
@@ -62,9 +183,7 @@
   .fleet-stats b{color:var(--text);}
   .fleet-legend{display:flex;gap:12px;margin-top:9px;font-size:10.5px;color:var(--text-muted);flex-wrap:wrap;}
   .fleet-legend span{display:inline-flex;align-items:center;gap:4px;}
-  .sw{width:9px;height:9px;border-radius:2px;display:inline-block;}
 
-  /* Panels */
   .grid-2{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-top:16px;}
   .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;}
   .panel h2{margin:0 0 2px;font-size:14px;font-weight:700;}
@@ -77,7 +196,6 @@
   .trend-legend{display:flex;gap:16px;font-size:11px;color:var(--text-muted);margin-top:10px;}
   .trend-legend span{display:inline-flex;align-items:center;gap:5px;}
 
-  /* Funnel */
   .funnel-row{display:flex;align-items:center;gap:10px;padding:6px 0;cursor:pointer;border-radius:6px;}
   .funnel-row:hover{background:#F8FAFC;}
   .funnel-row.active{background:var(--accent-light);}
@@ -86,14 +204,12 @@
   .funnel-fill{height:100%;border-radius:5px;}
   .funnel-count{width:34px;flex-shrink:0;text-align:right;font-size:11.5px;font-weight:700;}
 
-  /* Blocked list */
   .blocked-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;
     background:var(--red-bg);margin-bottom:7px;cursor:pointer;}
   .blocked-item:hover{filter:brightness(0.97);}
   .blocked-item .bid{font-family:'SFMono-Regular',Consolas,monospace;font-weight:700;font-size:12px;color:var(--red);}
   .blocked-item .breason{font-size:11px;color:#7F1D1D;}
 
-  /* Toolbar */
   .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:26px 0 12px;}
   .toolbar input[type=text]{padding:8px 12px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;width:220px;outline:none;font-family:inherit;}
   .toolbar input:focus{border-color:var(--accent);}
@@ -113,6 +229,7 @@
   thead th:hover{background:var(--accent-dark);}
   tbody td{padding:9px 12px;font-size:12.5px;border-top:1px solid var(--border);}
   tbody tr:hover td{background:#F8FAFC;}
+  tbody tr.iv-row{cursor:pointer;}
   .unit-id{font-family:'SFMono-Regular',Consolas,monospace;font-weight:700;font-size:11.5px;}
   .type-pill{display:inline-flex;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:800;color:white;}
   .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:700;white-space:nowrap;}
@@ -128,45 +245,107 @@
 </head>
 <body>
 
-  <div class="header">
-    <div>
-      <h1>VoltaGrid Shipment Status<span class="mock-badge">MOCKUP — v1 draft</span></h1>
-      <div class="sub">ICB (M200480-01) &middot; GCB (M200480-03) &middot; FCB (M200480-02) &middot; production-to-ship pipeline</div>
-    </div>
+<div class="switcher-bar">
+  <div class="brandmark"><span class="logo-sq">RE</span>REV Engineering &middot; VoltaGrid Delivery Portal</div>
+  <div class="seg">
+    <button id="btnCustomer" class="active">Customer Portal</button>
+    <button id="btnInternal">Internal — REV Team</button>
+  </div>
+  <div class="switcher-note">Mockup &middot; prototype data model</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- CUSTOMER VIEW -->
+<!-- ============================================================ -->
+<div class="view active" id="customerView">
+  <div class="cv-hero">
+    <div class="cv-hero-inner">
+      <div>
+        <h1>VoltaGrid Delivery Portal</h1>
+        <div class="sub">Live production and shipment status for your ICB, GCB and FCB breaker order. Updated as units move through final test and ship.</div>
   </div>
 
-  <div class="kpi-row" id="kpiRow"></div>
+  <div class="cv-body">
+    <div class="cv-kpi-row" id="cvKpiRow"></div>
 
-  <div class="fleet-row" id="fleetRow"></div>
+    <div class="cv-section-label">Order Progress by Unit Type</div>
+    <div class="cv-fleet-row" id="cvFleetRow"></div>
 
-  <div class="grid-2">
-    <div class="panel">
+    <div class="cv-panel">
       <h2>Units shipped per week</h2>
-      <div class="panel-sub">Click a bar to filter the unit table below</div>
-      <svg class="trend" id="trendSvg"></svg>
-      <div class="trend-legend" id="trendLegend"></div>
+      <div class="cv-panel-sub">Shipment cadence across your order</div>
+      <svg class="cv-trend" id="cvTrendSvg"></svg>
+      <div class="cv-trend-legend" id="cvTrendLegend"></div>
     </div>
-    <div class="panel">
-      <h2>Pipeline funnel (tracked units)</h2>
-      <div class="panel-sub">Click a stage to filter the table below</div>
-      <div id="funnelList"></div>
-      <div class="section-label" style="margin-top:18px;">Blocked / flagged units</div>
-      <div id="blockedList"></div>
-    </div>
-  </div>
 
-  <div class="section-label">Unit-level detail</div>
-  <div class="toolbar">
-    <input type="text" id="searchBox" placeholder="Search unit or job&hellip;">
-    <select id="typeFilter"><option value="">All types</option><option value="ICB">ICB</option><option value="GCB">GCB</option><option value="FCB">FCB</option></select>
-    <select id="stageFilter"><option value="">All stages</option></select>
-    <div class="chips" id="chipRow"></div>
-    <div class="count" id="rowCount"></div>
+    <div class="cv-section-label">Unit Status<span style="text-transform:none;font-weight:600;color:var(--text-faint);letter-spacing:0;"> &mdash; click a unit for its production timeline</span></div>
+    <div class="cv-toolbar">
+      <input type="text" id="cvSearchBox" placeholder="Search unit number&hellip;">
+      <select id="cvTypeFilter"><option value="">All types</option><option value="ICB">ICB</option><option value="GCB">GCB</option><option value="FCB">FCB</option></select>
+      <select id="cvStatusFilter"><option value="">All statuses</option></select>
+      <div class="cv-chips" id="cvChipRow"></div>
+      <div class="count" id="cvRowCount"></div>
+    </div>
+    <table class="cv-table">
+      <thead><tr><th style="width:24px;"></th><th>Unit</th><th>Type</th><th>Status</th><th>Planned Ship</th><th>Shipped</th></tr></thead>
+      <tbody id="cvTbody"></tbody>
+    </table>
+
+    <div class="cv-footer">Questions about your order? Contact your <b>REV Engineering</b> account team.</div>
   </div>
-  <table>
-    <thead><tr id="headRow"></tr></thead>
-    <tbody id="tbody"></tbody>
-  </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- INTERNAL VIEW -->
+<!-- ============================================================ -->
+<div class="view" id="internalView">
+  <div class="iv-banner">INTERNAL — REV ENGINEERING TEAM ONLY — not for external distribution</div>
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <h1>VoltaGrid Shipment Status<span class="mock-badge">MOCKUP — v1 draft</span></h1>
+        <div class="sub">ICB (M200480-01) &middot; GCB (M200480-03) &middot; FCB (M200480-02) &middot; production-to-ship pipeline</div>
+      </div>
+      <div class="meta">
+        Source: <b>GCB &amp; FCB status</b> tracker + <b>RAIL</b> (Sep 30, 2026)<br>
+        As of <b>Oct 1, 2026</b> &middot; 358 units in current tracking window
+      </div>
+    </div>
+
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <div class="fleet-row" id="fleetRow"></div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h2>Units shipped per week</h2>
+        <div class="panel-sub">Click a bar to filter the unit table below</div>
+        <svg class="trend" id="trendSvg"></svg>
+        <div class="trend-legend" id="trendLegend"></div>
+      </div>
+      <div class="panel">
+        <h2>Pipeline funnel (tracked units)</h2>
+        <div class="panel-sub">Click a stage to filter the table below</div>
+        <div id="funnelList"></div>
+        <div class="section-label" style="margin-top:18px;">Blocked / flagged units</div>
+        <div id="blockedList"></div>
+      </div>
+    </div>
+
+    <div class="section-label">Unit-level detail<span style="text-transform:none;font-weight:600;color:var(--text-faint);letter-spacing:0;"> &mdash; click a unit for its full timeline</span></div>
+    <div class="toolbar">
+      <input type="text" id="searchBox" placeholder="Search unit or job&hellip;">
+      <select id="typeFilter"><option value="">All types</option><option value="ICB">ICB</option><option value="GCB">GCB</option><option value="FCB">FCB</option></select>
+      <select id="stageFilter"><option value="">All stages</option></select>
+      <div class="chips" id="chipRow"></div>
+      <div class="count" id="rowCount"></div>
+    </div>
+    <table>
+      <thead><tr id="headRow"><th style="width:24px;cursor:default;"></th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
 
 <div class="tooltip" id="tooltip"></div>
 
@@ -175,15 +354,308 @@ const RECORDS = [{"type":"ICB","unit":"ICB-188","job":"M200480-01","yard":null,"
 const TREND = [{"week":"2026-07-13","ICB":0,"GCB":2,"FCB":0,"total":2},{"week":"2026-07-20","ICB":0,"GCB":5,"FCB":3,"total":8},{"week":"2026-07-27","ICB":0,"GCB":5,"FCB":1,"total":6},{"week":"2026-08-03","ICB":0,"GCB":10,"FCB":2,"total":12},{"week":"2026-08-10","ICB":0,"GCB":3,"FCB":3,"total":6},{"week":"2026-08-17","ICB":0,"GCB":14,"FCB":5,"total":19},{"week":"2026-08-24","ICB":0,"GCB":3,"FCB":0,"total":3},{"week":"2026-08-31","ICB":0,"GCB":14,"FCB":2,"total":16},{"week":"2026-09-07","ICB":0,"GCB":0,"FCB":3,"total":3},{"week":"2026-09-14","ICB":0,"GCB":13,"FCB":1,"total":14},{"week":"2026-09-28","ICB":0,"GCB":10,"FCB":2,"total":12}];
 const KPIS = {"contracted":{"ICB":280,"GCB":230,"FCB":35},"totalContracted":545,"tracked":{"ICB":93,"GCB":230,"FCB":35},"totalTracked":358,"shipped":{"ICB":0,"GCB":79,"FCB":22},"totalShipped":101,"inPipeline":{"ICB":17,"GCB":62,"FCB":8},"totalInPipeline":87,"blocked":11,"upcoming14d":30,"asOf":"2026-10-01"};
 
-const TYPE_COLOR = {ICB:'var(--icb)', GCB:'var(--gcb)', FCB:'var(--fcb)'};
 const TYPE_COLOR_HEX = {ICB:'#2F5FA3', GCB:'#7C3AED', FCB:'#C1560C'};
 const STAGE_ORDER = ['Not Started','In the Yard','In Production','Internal Test Ready','CAT Ready','CAT Done — Awaiting Ship','Shipped'];
 const STAGE_COLOR = {
   'Not Started':'#CBD5E1','In the Yard':'#94A3B8','In Production':'#60A5FA',
   'Internal Test Ready':'#38BDF8','CAT Ready':'#FBBF24','CAT Done — Awaiting Ship':'#F59E0B','Shipped':'#22C55E'
 };
+const STAGE_FIELDS = [null,'yard','started','internalTestReady','catReady','catDone','shipped'];
+const CV_STAGE_LABEL = {
+  'Not Started':'Scheduled',
+  'In the Yard':'In Production Queue',
+  'In Production':'In Production',
+  'Internal Test Ready':'Testing',
+  'CAT Ready':'Final Inspection',
+  'CAT Done — Awaiting Ship':'Ready to Ship',
+  'Shipped':'Shipped'
+};
 
-// ===================== KPI cards =====================
+/* ---- shared helpers ---- */
+function fmtD(iso){
+  if(!iso) return '—';
+  const d = new Date(iso+'T00:00:00');
+  return (d.getMonth()+1)+'/'+d.getDate()+'/'+String(d.getFullYear()).slice(2);
+}
+// Builds the horizontal milestone-timeline strip shown when a table row is expanded.
+// labelMap lets the same stage sequence read as plain internal stage names, or as
+// customer-friendly language, depending on which view is rendering it.
+function buildTimeline(r, labelMap){
+  const curIdx = STAGE_ORDER.indexOf(r.stage);
+  let html = '<div class="mini-timeline">';
+  STAGE_ORDER.forEach((s,i)=>{
+    // the terminal "Shipped" milestone is a completed state, not an in-progress one,
+    // so it renders the same as "done" rather than the amber "current" marker
+    const cls = i<curIdx ? 'done' : (i===curIdx ? (s==='Shipped' ? 'done' : 'current') : '');
+    const field = STAGE_FIELDS[i];
+    const dateVal = field ? r[field] : null;
+    html += `<div class="mini-step ${cls}"><div class="mini-line"></div><div class="mini-dot"></div>`
+          + `<div class="mini-label">${labelMap[s]}</div>`
+          + (dateVal ? `<div class="mini-date">${fmtD(dateVal)}</div>` : '')
+          + `</div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+/* ============================================================
+   VIEW SWITCHER
+   ============================================================ */
+const btnCustomer = document.getElementById('btnCustomer');
+const btnInternal = document.getElementById('btnInternal');
+const customerView = document.getElementById('customerView');
+const internalView = document.getElementById('internalView');
+btnCustomer.addEventListener('click', ()=>{
+  btnCustomer.classList.add('active'); btnInternal.classList.remove('active');
+  customerView.classList.add('active'); internalView.classList.remove('active');
+});
+btnInternal.addEventListener('click', ()=>{
+  btnInternal.classList.add('active'); btnCustomer.classList.remove('active');
+  internalView.classList.add('active'); customerView.classList.remove('active');
+});
+
+/* ============================================================
+   CUSTOMER VIEW — sanitized, high-level, fully drillable
+   ============================================================ */
+function cvBadgeClass(stage){
+  if(stage==='Shipped') return 'shipped';
+  if(stage==='Not Started') return 'scheduled';
+  return 'progress';
+}
+// For customer view, a unit's displayed status never reveals internal blocker text —
+// it simply reflects the furthest completed production milestone.
+function cvStatus(r){ return CV_STAGE_LABEL[r.stage] || r.stage; }
+
+let cvDrill = { kpi:null, type:null, week:null };
+const cvExpanded = new Set();
+
+const cvKpiDefs = [
+  {key:'totalContracted', val:KPIS.totalContracted, lbl:'Units On Order', sub:'ICB 280 · GCB 230 · FCB 35'},
+  {key:'totalShipped', val:KPIS.totalShipped, lbl:'Shipped To Date', sub:Math.round(KPIS.totalShipped/KPIS.totalContracted*100)+'% of order'},
+  {key:'totalInPipeline', val:KPIS.totalInPipeline, lbl:'In Production / Testing', sub:'actively moving through the shop'},
+  {key:'upcoming14d', val:KPIS.upcoming14d, lbl:'Planned to Ship (14 days)', sub:'per current production schedule'},
+];
+const cvKpiRow = document.getElementById('cvKpiRow');
+cvKpiDefs.forEach(k=>{
+  const el = document.createElement('div');
+  el.className = 'cv-kpi';
+  el.dataset.key = k.key;
+  el.innerHTML = `<div class="val">${k.val}</div><div class="lbl">${k.lbl}</div><div class="sub">${k.sub}</div><div class="caret">View units &rarr;</div>`;
+  el.addEventListener('click', ()=>{
+    cvDrill.kpi = (cvDrill.kpi === k.key) ? null : k.key;
+    document.querySelectorAll('.cv-kpi').forEach(e=>e.classList.toggle('active', e.dataset.key===cvDrill.kpi));
+    cvRenderChips(); cvRenderTable();
+    document.querySelector('.cv-table-wrap, #cvTbody').scrollIntoView({behavior:'smooth', block:'nearest'});
+  });
+  cvKpiRow.appendChild(el);
+});
+
+const CV_JOB_MAP = {ICB:'M200480-01', GCB:'M200480-03', FCB:'M200480-02'};
+function cvRenderFleet(){
+  const row = document.getElementById('cvFleetRow');
+  row.innerHTML='';
+  ['ICB','GCB','FCB'].forEach(t=>{
+    const contracted = KPIS.contracted[t];
+    const shipped = KPIS.shipped[t];
+    const pipeline = KPIS.inPipeline[t];
+    const pct = Math.round(shipped/contracted*100);
+    // on-schedule heuristic for customer messaging: no units of this type carry an internal flag
+    const hasDelayed = RECORDS.some(r=>r.type===t && r.flag);
+    const card = document.createElement('div');
+    card.className='cv-fleet-card' + (cvDrill.type===t ? ' active' : '');
+    const rad = 34, c = 2*Math.PI*rad;
+    const dash = c*(pct/100);
+    card.innerHTML = `
+      <div class="cft"><b>${t}</b><span>${CV_JOB_MAP[t]}</span></div>
+      <div class="cfsub">${contracted} units on order</div>
+      <div class="cv-ring-row">
+        <svg class="cv-ring" width="84" height="84" viewBox="0 0 84 84">
+          <circle cx="42" cy="42" r="${rad}" fill="none" stroke="#EEF2F7" stroke-width="9"/>
+          <circle cx="42" cy="42" r="${rad}" fill="none" stroke="${TYPE_COLOR_HEX[t]}" stroke-width="9"
+            stroke-dasharray="${dash} ${c}" stroke-linecap="round" transform="rotate(-90 42 42)"/>
+          <text x="42" y="47" text-anchor="middle" font-size="17" font-weight="800" fill="var(--rev-navy)">${pct}%</text>
+        </svg>
+        <div class="cv-ring-stats">
+          <div class="big">${shipped} / ${contracted}</div>
+          <div class="small">shipped &middot; ${pipeline} in progress</div>
+          <div class="cv-status-pill ${hasDelayed?'watch':'ontrack'}"><span class="dot"></span>${hasDelayed?'Minor schedule watch':'On schedule'}</div>
+        </div>
+      </div>`;
+    card.addEventListener('click', ()=>{
+      cvDrill.type = (cvDrill.type === t) ? null : t;
+      cvRenderFleet(); cvRenderChips(); cvRenderTable();
+    });
+    row.appendChild(card);
+  });
+}
+cvRenderFleet();
+
+function cvFmtWeek(w){ const d = new Date(w+'T00:00:00'); return (d.getMonth()+1)+'/'+d.getDate(); }
+function cvRenderTrend(){
+  const W=900,H=190,padL=30,padR=10,padT=10,padB=28;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const maxTotal = Math.max(...TREND.map(t=>t.total),1);
+  const slot = plotW/TREND.length, bw = slot*0.55;
+  let svg = '';
+  for(let i=0;i<=4;i++){
+    const y = padT+plotH-(plotH*i/4);
+    svg += `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#EEF2F7" stroke-width="1"/>`;
+    svg += `<text x="${padL-5}" y="${y+3}" text-anchor="end" class="cv-trend-axis-label">${Math.round(maxTotal*i/4)}</text>`;
+  }
+  TREND.forEach((t,i)=>{
+    const x = padL+slot*i+slot/2-bw/2;
+    let yCursor = padT+plotH;
+    const active = cvDrill.week===t.week;
+    ['GCB','FCB','ICB'].forEach(type=>{
+      const v = t[type];
+      if(!v) return;
+      const h = plotH*(v/maxTotal);
+      yCursor -= h;
+      svg += `<rect class="trend-bar" data-cvweek="${t.week}" x="${x}" y="${yCursor}" width="${bw}" height="${h}" fill="${TYPE_COLOR_HEX[type]}" opacity="${active?1:0.85}" rx="2"/>`;
+    });
+    svg += `<text x="${x+bw/2}" y="${H-8}" text-anchor="middle" class="cv-trend-axis-label">${cvFmtWeek(t.week)}</text>`;
+  });
+  const cvSvgEl = document.getElementById('cvTrendSvg');
+  cvSvgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  cvSvgEl.innerHTML = svg;
+}
+document.getElementById('cvTrendLegend').innerHTML = `
+  <span><span class="sw" style="background:${TYPE_COLOR_HEX.GCB}"></span>GCB</span>
+  <span><span class="sw" style="background:${TYPE_COLOR_HEX.FCB}"></span>FCB</span>
+  <span><span class="sw" style="background:${TYPE_COLOR_HEX.ICB}"></span>ICB</span>
+  <span style="color:var(--text-faint);">Click a bar to filter units below</span>`;
+cvRenderTrend();
+
+document.addEventListener('click',(e)=>{
+  const bar = e.target.closest('[data-cvweek]');
+  if(!bar) return;
+  cvDrill.week = (cvDrill.week===bar.dataset.cvweek) ? null : bar.dataset.cvweek;
+  cvRenderTrend(); cvRenderChips(); cvRenderTable();
+});
+document.addEventListener('mousemove',(e)=>{
+  const bar = e.target.closest('[data-cvweek]');
+  if(!bar) return;
+  const t = TREND.find(x=>x.week===bar.dataset.cvweek);
+  if(!t) return;
+  showTip(e, `<b>Week of ${cvFmtWeek(t.week)}</b><br>${t.total} units shipped`);
+});
+document.addEventListener('mouseout',(e)=>{ if(e.target.closest('[data-cvweek]')) hideTip(); });
+
+const cvStatusFilter = document.getElementById('cvStatusFilter');
+Object.values(CV_STAGE_LABEL).filter((v,i,a)=>a.indexOf(v)===i).forEach(s=>{
+  const o=document.createElement('option'); o.value=s; o.textContent=s; cvStatusFilter.appendChild(o);
+});
+
+function cvMatchesDrill(r){
+  if(cvDrill.type && r.type!==cvDrill.type) return false;
+  if(cvDrill.week){
+    if(!r.shipped) return false;
+    const d = new Date(r.shipped+'T00:00:00');
+    const wkStart = new Date(d); wkStart.setDate(d.getDate() - ((d.getDay()+6)%7));
+    if(wkStart.toISOString().slice(0,10) !== cvDrill.week) return false;
+  }
+  if(cvDrill.kpi){
+    if(cvDrill.kpi==='totalShipped' && r.stage!=='Shipped') return false;
+    if(cvDrill.kpi==='totalInPipeline' && (r.stage==='Shipped'||r.stage==='Not Started')) return false;
+    if(cvDrill.kpi==='upcoming14d'){
+      if(!r.plannedShip || r.shipped) return false;
+      const d = new Date(r.plannedShip+'T00:00:00');
+      const today = new Date('2026-10-01T00:00:00');
+      const diff = (d-today)/86400000;
+      if(diff<0 || diff>14) return false;
+    }
+  }
+  return true;
+}
+
+function cvRenderChips(){
+  const chipRow = document.getElementById('cvChipRow');
+  chipRow.innerHTML='';
+  const defs=[];
+  if(cvDrill.type) defs.push(['type', cvDrill.type]);
+  if(cvDrill.week) defs.push(['week','Week of '+cvFmtWeek(cvDrill.week)]);
+  if(cvDrill.kpi) defs.push(['kpi', cvKpiDefs.find(k=>k.key===cvDrill.kpi).lbl]);
+  defs.forEach(([type,label])=>{
+    const chip = document.createElement('span');
+    chip.className='cv-chip';
+    chip.innerHTML = `${label}<span class="x">&times;</span>`;
+    chip.querySelector('.x').addEventListener('click', ()=>{
+      cvDrill[type]=null;
+      cvRenderFleet(); cvRenderTrend(); cvRenderChips(); cvRenderTable();
+      document.querySelectorAll('.cv-kpi').forEach(e=>e.classList.toggle('active', e.dataset.key===cvDrill.kpi));
+    });
+    chipRow.appendChild(chip);
+  });
+  if(defs.length){
+    const clr=document.createElement('span');
+    clr.className='cv-clear-all'; clr.textContent='Clear all';
+    clr.addEventListener('click', ()=>{
+      cvDrill={kpi:null,type:null,week:null};
+      document.querySelectorAll('.cv-kpi').forEach(e=>e.classList.remove('active'));
+      cvRenderFleet(); cvRenderTrend(); cvRenderChips(); cvRenderTable();
+    });
+    chipRow.appendChild(clr);
+  }
+}
+
+function cvRenderTable(){
+  const q = document.getElementById('cvSearchBox').value.trim().toLowerCase();
+  const typeVal = document.getElementById('cvTypeFilter').value;
+  const statusVal = cvStatusFilter.value;
+  let rows = RECORDS.filter(r=>{
+    if(!cvMatchesDrill(r)) return false;
+    if(typeVal && r.type!==typeVal) return false;
+    if(statusVal && cvStatus(r)!==statusVal) return false;
+    if(q && !r.unit.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  rows.sort((a,b)=> a.unit < b.unit ? -1 : a.unit > b.unit ? 1 : 0);
+  document.getElementById('cvRowCount').textContent = rows.length+' of '+RECORDS.length+' units';
+  const tbody = document.getElementById('cvTbody');
+  tbody.innerHTML='';
+  rows.forEach(r=>{
+    const isOpen = cvExpanded.has(r.unit);
+    const tr = document.createElement('tr');
+    tr.className = 'cv-row' + (isOpen ? ' expanded' : '');
+    tr.innerHTML = `
+      <td><span class="expand-chevron">&#9654;</span></td>
+      <td style="font-family:'SFMono-Regular',Consolas,monospace;font-weight:700;">${r.unit}</td>
+      <td><span class="cv-type-pill" style="background:${TYPE_COLOR_HEX[r.type]}">${r.type}</span></td>
+      <td><span class="cv-badge ${cvBadgeClass(r.stage)}">${cvStatus(r)}</span></td>
+      <td>${fmtD(r.plannedShip)}</td>
+      <td>${fmtD(r.shipped)}</td>`;
+    tr.addEventListener('click', ()=>{
+      if(cvExpanded.has(r.unit)) cvExpanded.delete(r.unit); else cvExpanded.add(r.unit);
+      cvRenderTable();
+    });
+    tbody.appendChild(tr);
+    if(isOpen){
+      const etr = document.createElement('tr');
+      etr.className = 'cv-expand-row';
+      etr.innerHTML = `<td colspan="6">
+        <div class="timeline-wrap">
+          ${buildTimeline(r, CV_STAGE_LABEL)}
+          <div class="expand-side">
+            <div class="es-row"><span>Job</span><b>${r.job}</b></div>
+            <div class="es-row"><span>Current status</span><b>${cvStatus(r)}</b></div>
+            <div class="es-row"><span>Planned ship</span><b>${fmtD(r.plannedShip)}</b></div>
+            ${r.shipped?`<div class="es-row"><span>Shipped</span><b>${fmtD(r.shipped)}</b></div>`:''}
+          </div>
+        </div></td>`;
+      tbody.appendChild(etr);
+    }
+  });
+}
+cvRenderTable();
+cvRenderChips();
+document.getElementById('cvSearchBox').addEventListener('input', cvRenderTable);
+document.getElementById('cvTypeFilter').addEventListener('change', cvRenderTable);
+cvStatusFilter.addEventListener('change', cvRenderTable);
+
+
+/* ============================================================
+   INTERNAL VIEW — full detail (same as v1 mockup)
+   ============================================================ */
 const kpiDefs = [
   {key:'totalContracted', val:KPIS.totalContracted, lbl:'Total Contracted Units', sub:'ICB 280 · GCB 230 · FCB 35', cls:'neutral'},
   {key:'totalTracked', val:KPIS.totalTracked, lbl:'Units In Current Tracker', sub:Math.round(KPIS.totalTracked/KPIS.totalContracted*100)+'% of contract visible', cls:'neutral'},
@@ -210,7 +682,6 @@ function applyKpiFilter(key){
   renderChips(); renderTable();
 }
 
-// ===================== Fleet progress cards =====================
 const JOB_MAP = {ICB:'M200480-01 · (280) 35kV ICB', GCB:'M200480-03 · (230) 15kV GCB', FCB:'M200480-02 · (35) 35kV FCB'};
 const fleetRow = document.getElementById('fleetRow');
 function renderFleet(){
@@ -246,14 +717,13 @@ function renderFleet(){
 }
 renderFleet();
 
-// ===================== Trend chart =====================
 function fmtWeek(w){ const d = new Date(w+'T00:00:00'); return (d.getMonth()+1)+'/'+d.getDate(); }
 function renderTrend(){
   const W=900,H=220,padL=30,padR=10,padT=10,padB=30;
   const plotW=W-padL-padR, plotH=H-padT-padB;
   const maxTotal = Math.max(...TREND.map(t=>t.total),1);
   const slot = plotW/TREND.length, bw = slot*0.55;
-  let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="100%">`;
+  let svg = '';
   for(let i=0;i<=4;i++){
     const y = padT+plotH-(plotH*i/4);
     svg += `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="#EEF2F7" stroke-width="1"/>`;
@@ -272,9 +742,9 @@ function renderTrend(){
     });
     svg += `<text x="${x+bw/2}" y="${H-10}" text-anchor="middle" class="trend-axis-label">${fmtWeek(t.week)}</text>`;
   });
-  svg += `</svg>`;
-  document.getElementById('trendSvg').outerHTML = svg;
-  document.getElementById('trendSvg') // no-op fallback
+  const ivSvgEl = document.getElementById('trendSvg');
+  ivSvgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  ivSvgEl.innerHTML = svg;
 }
 document.getElementById('trendLegend').innerHTML = `
   <span><span class="sw" style="background:${TYPE_COLOR_HEX.GCB}"></span>GCB</span>
@@ -297,7 +767,6 @@ document.addEventListener('mousemove',(e)=>{
 });
 document.addEventListener('mouseout',(e)=>{ if(e.target.closest('[data-week]')) hideTip(); });
 
-// ===================== Funnel =====================
 function renderFunnel(){
   const funnelList = document.getElementById('funnelList');
   funnelList.innerHTML = '';
@@ -319,7 +788,6 @@ function renderFunnel(){
 }
 renderFunnel();
 
-// ===================== Blocked list =====================
 function renderBlocked(){
   const blockedList = document.getElementById('blockedList');
   const flagged = RECORDS.filter(r=>r.flag);
@@ -331,14 +799,13 @@ function renderBlocked(){
     el.addEventListener('click', ()=>{
       document.getElementById('searchBox').value = r.unit;
       renderTable();
-      window.scrollTo({top: document.querySelector('table').offsetTop - 80, behavior:'smooth'});
+      window.scrollTo({top: document.querySelector('#internalView table').offsetTop - 80, behavior:'smooth'});
     });
     blockedList.appendChild(el);
   });
 }
 renderBlocked();
 
-// ===================== Table =====================
 const COLS = [
   {key:'unit', label:'Unit'},
   {key:'type', label:'Type'},
@@ -363,15 +830,13 @@ COLS.forEach(c=>{
   headRow.appendChild(th);
 });
 const thFlag = document.createElement('th'); thFlag.textContent='Flag'; headRow.appendChild(thFlag);
+const IV_STAGE_LABEL = Object.fromEntries(STAGE_ORDER.map(s=>[s,s]));
+const ivExpanded = new Set();
 
 const stageFilter = document.getElementById('stageFilter');
 STAGE_ORDER.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s; stageFilter.appendChild(o); });
 
-function fmtDate(iso){
-  if(!iso) return '—';
-  const d = new Date(iso+'T00:00:00');
-  return (d.getMonth()+1)+'/'+d.getDate()+'/'+String(d.getFullYear()).slice(2);
-}
+const fmtDate = fmtD;
 function stageBadgeClass(stage){
   if(stage==='Shipped') return 'shipped';
   if(stage==='Not Started') return 'notstarted';
@@ -458,8 +923,11 @@ function renderTable(){
   const tbody = document.getElementById('tbody');
   tbody.innerHTML='';
   rows.forEach(r=>{
+    const isOpen = ivExpanded.has(r.unit);
     const tr = document.createElement('tr');
+    tr.className = 'iv-row' + (isOpen ? ' expanded' : '');
     tr.innerHTML = `
+      <td><span class="expand-chevron">&#9654;</span></td>
       <td class="unit-id">${r.unit}</td>
       <td><span class="type-pill" style="background:${TYPE_COLOR_HEX[r.type]}">${r.type}</span></td>
       <td><span class="badge ${stageBadgeClass(r.stage)}">${r.stage}</span></td>
@@ -471,7 +939,29 @@ function renderTable(){
       <td>${fmtDate(r.shipped)}</td>
       <td>${fmtDate(r.plannedShip)}</td>
       <td>${r.flag ? `<span class="badge blocked">${r.flag}</span>` : '—'}</td>`;
+    tr.addEventListener('click', (e)=>{
+      if(e.target.closest('th')) return;
+      if(ivExpanded.has(r.unit)) ivExpanded.delete(r.unit); else ivExpanded.add(r.unit);
+      renderTable();
+    });
     tbody.appendChild(tr);
+    if(isOpen){
+      const etr = document.createElement('tr');
+      etr.className = 'iv-expand-row';
+      etr.innerHTML = `<td colspan="12">
+        <div class="timeline-wrap">
+          ${buildTimeline(r, IV_STAGE_LABEL)}
+          <div class="expand-side">
+            <div class="es-row"><span>Job</span><b>${r.job}</b></div>
+            <div class="es-row"><span>Internal stage</span><b>${r.stage}</b></div>
+            <div class="es-row"><span>Planned ship</span><b>${fmtDate(r.plannedShip)}</b></div>
+            ${r.shipped?`<div class="es-row"><span>Shipped</span><b>${fmtDate(r.shipped)}</b></div>`:''}
+            <div class="expand-cvline">Customer portal shows: <b>${CV_STAGE_LABEL[r.stage]}</b></div>
+            ${r.flag ? `<div class="expand-flagline">${r.flag} — not shown on customer portal</div>` : ''}
+          </div>
+        </div></td>`;
+      tbody.appendChild(etr);
+    }
   });
 }
 renderTable();
@@ -481,7 +971,6 @@ document.getElementById('searchBox').addEventListener('input', renderTable);
 document.getElementById('typeFilter').addEventListener('change', renderTable);
 stageFilter.addEventListener('change', renderTable);
 
-// ===================== tooltip =====================
 const tooltip = document.getElementById('tooltip');
 function showTip(e, html){ tooltip.style.display='block'; tooltip.style.left=(e.clientX+14)+'px'; tooltip.style.top=(e.clientY+14)+'px'; tooltip.innerHTML=html; }
 function hideTip(){ tooltip.style.display='none'; }
