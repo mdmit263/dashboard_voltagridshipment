@@ -367,6 +367,10 @@
         <h1>VoltaGrid Shipment Status<span class="mock-badge">MOCKUP — v1 draft</span></h1>
         <div class="sub">ICB (M200480-01) &middot; GCB (M200480-03) &middot; FCB (M200480-02) &middot; production-to-ship pipeline</div>
       </div>
+      <div class="meta">
+        Source: <b>GCB &amp; FCB status</b> tracker + <b>RAIL</b> (Sep 30, 2026)<br>
+        As of <b>Oct 1, 2026</b> &middot; 358 units in current tracking window
+      </div>
     </div>
 
     <div class="kpi-row" id="kpiRow"></div>
@@ -578,7 +582,7 @@ function cvRenderFleet(){
           <div class="cv-status-pill ${hasDelayed?'watch':'ontrack'}"><span class="dot"></span>${hasDelayed?'Minor schedule watch':'On schedule'}</div>
         </div>
       </div>
-      ${(t==='ICB'||t==='FCB')?'<div class="cfsub" style="margin:2px 0 8px"></div>':''}
+      ${(t==='ICB'||t==='FCB')?'<div class="cfsub" style="margin:2px 0 8px">Shipped count per RAIL production overview. The unit list below covers units in current tracking.</div>':''}
       <div class="schedule-link" data-sched-type="${t}">View full production schedule <span class="arrow">&rarr;</span></div>`;
     card.addEventListener('click', (e)=>{
       if(e.target.closest('.schedule-link')) return;
@@ -1103,6 +1107,15 @@ function schedMonthLabel(m){
 }
 
 function schedStatus(r){
+  if(schedState.customer){
+    const t = (r.unit||'').split(' ')[0];
+    if(r.seq <= (SHIPPED_N[t]||0)) return {label:'Shipped', cls:'shipped'};
+    if(r.readyToShip && r.readyToShip<=PACE_ASOF_CV) return {label:'Ready to Ship', cls:'shipped'};
+    if(r.actualCAT && r.actualCAT<=PACE_ASOF_CV) return {label:'CAT Complete', cls:'active'};
+    if(r.actualCAT) return {label:'CAT Scheduled', cls:'notstarted'};
+    if(r.forecastCAT) return {label:'Forecast Scheduled', cls:'notstarted'};
+    return {label:'Queued', cls:'notstarted'};
+  }
   if(r.readyToShip) return {label:'Ready to Ship', cls:'shipped'};
   if(r.actualCAT) return {label:'CAT Complete', cls:'active'};
   if(r.forecastCAT) return {label:'Forecast Scheduled', cls:'notstarted'};
@@ -1115,14 +1128,15 @@ function openScheduleModal(type, isCustomer){
   const sum = RAIL_SUMMARY[type];
 
   document.getElementById('schedModalTitle').textContent = `${type} — Full Production Schedule`;
+  const catDone = isCustomer ? (SHIPPED_N[type] + recs.filter((r,i)=>i>=SHIPPED_N[type] && r.actualCAT && r.actualCAT<=PACE_ASOF_CV).length) : sum.withActualCAT;
   document.getElementById('schedModalSub').textContent =
-    `Sourced from VoltaGrid RAIL (Rolling Action Item List), as of Sep 30, 2026 — the complete ${sum.total}-unit production queue for ${type}, start to finish.`;
+    `Sourced from VoltaGrid RAIL (Rolling Action Item List), ${isCustomer?'updated Oct 7, 2026':'as of Sep 30, 2026'} — the complete ${sum.total}-unit production queue for ${type}, start to finish.`;
 
   document.getElementById('schedModalStats').innerHTML = `
     <div class="modal-stat"><div class="msv">${sum.total}</div><div class="msl">Total units in queue</div></div>
     <div class="modal-stat"><div class="msv">${sum.batches['M200480']||0}</div><div class="msl">Current batch (M200480)</div></div>
     <div class="modal-stat"><div class="msv">${sum.batches['M200468']||0}</div><div class="msl">Earlier batch (M200468)</div></div>
-    <div class="modal-stat"><div class="msv">${sum.withActualCAT}</div><div class="msl">CAT complete to date</div></div>
+    <div class="modal-stat"><div class="msv">${catDone}</div><div class="msl">CAT complete to date</div></div>
     <div class="modal-stat"><div class="msv">${sum.inTracker}</div><div class="msl">Also in live tracker above</div></div>`;
 
   document.getElementById('schedModalScopeNote').innerHTML = isCustomer
@@ -1144,6 +1158,10 @@ function openScheduleModal(type, isCustomer){
 
 /* ---- weekly request vs delivery chart (replaces the monthly production-pace chart) ---- */
 const PACE_ASOF = '2026-09-30';
+/* Customer view only: RAIL refreshed Oct 7, 2026. Shipped = RAIL production overview "Bases Shipped" (both batches) = the first N units in the RAIL queue (ICB Unit 246, GCB 147, FCB 45). */
+const PACE_ASOF_CV = '2026-10-07';
+const SHIPPED_N = {ICB:246, GCB:147, FCB:45};
+function paceAsOf(){ return schedState.customer ? PACE_ASOF_CV : PACE_ASOF; }
 const PACE_COL = {req:'#4472C4', del:'#A5A5A5', cumReq:'#ED7D31', cumDel:'#FFC000'};
 function weekStartISO(iso){
   const d = new Date(iso+'T00:00:00Z'); const dow = (d.getUTCDay()+6)%7;
@@ -1153,20 +1171,25 @@ function addDaysISO(iso,n){ const d=new Date(iso+'T00:00:00Z'); d.setUTCDate(d.g
 function fmtWk(iso){ const d=new Date(iso+'T00:00:00Z'); return (d.getUTCMonth()+1)+'/'+d.getUTCDate(); }
 function buildPaceWeeks(type){
   const recs = RAIL_SCHEDULE[type], req = {}, del = {};
-  let noReq = 0;
-  recs.forEach(r=>{
+  const live = !!schedState.customer, N = live ? (SHIPPED_N[type]||0) : 0;
+  let noReq = 0, datedShipped = 0;
+  recs.forEach((r,i)=>{
     if(r.forecastCAT){ const w=weekStartISO(r.forecastCAT); req[w]=(req[w]||0)+1; } else noReq++;
-    if(r.actualCAT){ const w=weekStartISO(r.actualCAT); del[w]=(del[w]||0)+1; }
+    // live (customer) view: delivery = units shipped (first N in the queue) that have a dated CAT
+    if(r.actualCAT && (!live || i<N)){ const w=weekStartISO(r.actualCAT); del[w]=(del[w]||0)+1; datedShipped++; }
   });
+  const baseline = live ? Math.max(0, N-datedShipped) : 0;
   const keys = Object.keys(req).concat(Object.keys(del)).sort();
-  const weeks = []; if(!keys.length) return {weeks, noReq};
-  const nowWk = weekStartISO(PACE_ASOF);
+  const weeks = []; if(!keys.length) return {weeks, noReq, baseline};
+  const nowWk = weekStartISO(paceAsOf());
+  const delKeys = Object.keys(del).sort(), firstDel = delKeys.length ? delKeys[0] : nowWk;
   let cReq=0, cDel=0;
   for(let w=keys[0]; w<=keys[keys.length-1]; w=addDaysISO(w,7)){
     cReq += req[w]||0; cDel += del[w]||0;
-    weeks.push({week:w, req:req[w]||0, del:del[w]||0, cumReq:cReq, cumDel: w<=nowWk ? cDel : null, future: w>nowWk});
+    const showDel = w<=nowWk && (!live || w>=firstDel);
+    weeks.push({week:w, req:req[w]||0, del:del[w]||0, cumReq:cReq, cumDel: showDel ? baseline+cDel : null, future: w>nowWk});
   }
-  return {weeks, noReq};
+  return {weeks, noReq, baseline, firstDel};
 }
 function paceStep(max,n){
   const raw = Math.max(max,1)/n, mag = Math.pow(10,Math.floor(Math.log10(raw)));
@@ -1175,7 +1198,7 @@ function paceStep(max,n){
 }
 function renderScheduleChart(){
   const type = schedState.type;
-  const {weeks, noReq} = buildPaceWeeks(type);
+  const {weeks, noReq, baseline, firstDel} = buildPaceWeeks(type);
   const svgEl = document.getElementById('schedChartSvg');
   const wrap = svgEl.parentElement;
   const W = Math.max(520, Math.round(wrap.clientWidth || 1000)), H = 270;
@@ -1199,7 +1222,7 @@ function renderScheduleChart(){
   svg += `<text transform="translate(${W-8} ${padT+plotH/2}) rotate(90)" text-anchor="middle" class="trend-axis-label" style="font-weight:700">Cumulative units</text>`;
 
   const labelEvery = Math.max(1, Math.ceil(weeks.length/(plotW/46)));
-  const nowWk = weekStartISO(PACE_ASOF);
+  const nowWk = weekStartISO(paceAsOf());
   weeks.forEach((w,i)=>{
     const cx = padL+slot*i+slot/2, active = schedState.week===w.week;
     svg += `<rect class="sched-bar" data-pweek="${w.week}" x="${padL+slot*i}" y="${padT}" width="${slot}" height="${plotH}" fill="${active?'#2F5FA3':'transparent'}" fill-opacity="${active?0.08:0}"/>`;
@@ -1211,7 +1234,7 @@ function renderScheduleChart(){
     }
     if(w.week===nowWk){
       svg += `<line x1="${cx}" y1="${padT}" x2="${cx}" y2="${padT+plotH}" stroke="#14202B" stroke-width="1.2" stroke-dasharray="4 3"/>`;
-      svg += `<text x="${cx}" y="${padT+plotH+32}" text-anchor="middle" class="trend-axis-label" style="font-weight:700;fill:#14202B">As of ${fmtWk(PACE_ASOF)}</text>`;
+      svg += `<text x="${cx}" y="${padT+plotH+32}" text-anchor="middle" class="trend-axis-label" style="font-weight:700;fill:#14202B">As of ${fmtWk(paceAsOf())}</text>`;
     }
   });
   const reqLine = weeks.map((w,i)=>`${padL+slot*i+slot/2},${yR(w.cumReq)}`).join(' ');
@@ -1233,6 +1256,7 @@ function renderScheduleChart(){
     <span>${sw(PACE_COL.cumReq,1)}VoltaGrid Request (cumulative)</span>
     <span>${sw(PACE_COL.cumDel,1)}REV Delivery (cumulative)</span>
     ${noReq ? `<span style="color:var(--text-faint)">${noReq} units have no VoltaGrid date yet and are not plotted</span>` : ''}
+    ${(schedState.customer && baseline>0) ? `<span style="color:var(--text-faint)">Delivery line starts at ${baseline} units shipped before dated tracking began (week of ${fmtWk(firstDel)})</span>` : ''}
     ${schedState.week ? `<span class="sched-month-active" id="schedMonthClear">Showing week of ${fmtWk(schedState.week)} only &times;</span>` : ''}`;
   const clearEl = document.getElementById('schedMonthClear');
   if(clearEl) clearEl.addEventListener('click', ()=>{ schedState.week=null; renderScheduleChart(); renderScheduleTable(); });
