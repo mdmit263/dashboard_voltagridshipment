@@ -582,7 +582,7 @@ function cvRenderFleet(){
           <div class="cv-status-pill ${hasDelayed?'watch':'ontrack'}"><span class="dot"></span>${hasDelayed?'Minor schedule watch':'On schedule'}</div>
         </div>
       </div>
-      ${(t==='ICB'||t==='FCB')?'<div class="cfsub" style="margin:2px 0 8px">Shipped count per RAIL production overview. The unit list below covers units in current tracking.</div>':''}
+      ${(t==='ICB'||t==='FCB')?'<div class="cfsub" style="margin:2px 0 8px"></div>':''}
       <div class="schedule-link" data-sched-type="${t}">View full production schedule <span class="arrow">&rarr;</span></div>`;
     card.addEventListener('click', (e)=>{
       if(e.target.closest('.schedule-link')) return;
