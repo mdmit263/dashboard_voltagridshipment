@@ -242,6 +242,38 @@
     pointer-events:none;z-index:60;display:none;line-height:1.55;box-shadow:0 6px 18px rgba(0,0,0,.25);max-width:290px;}
   .tooltip b{color:#93C5FD;}
 
+
+  /* ===================== Unit detail side panel ===================== */
+  .usb{position:fixed;inset:0;background:rgba(7,26,51,.45);display:none;z-index:80;}
+  .usb.open{display:block;}
+  .usheet{position:absolute;top:0;right:0;bottom:0;width:min(600px,100%);background:#fff;box-shadow:-12px 0 40px rgba(7,26,51,.25);display:flex;flex-direction:column;animation:uslide .18s ease-out;}
+  @keyframes uslide{from{transform:translateX(30px);opacity:.4}to{transform:none;opacity:1}}
+  .ush{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start;}
+  .ush h3{margin:0;font-size:18px;color:var(--rev-navy);letter-spacing:-.01em;font-family:'SFMono-Regular',Consolas,monospace;}
+  .ush .uss{font-size:12.5px;color:var(--text-muted);margin-top:3px;}
+  .ush .unav{margin-left:auto;display:flex;gap:6px;flex:0 0 auto;}
+  .uib{border:1px solid var(--border);background:#fff;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:14px;color:var(--rev-navy);font-family:inherit;}
+  .uib:hover{background:#F1F5F9;} .uib:disabled{opacity:.35;cursor:default;}
+  .usbody{padding:18px 22px 26px;overflow:auto;flex:1;}
+  .ubanner{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#F8FAFC;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:16px;}
+  .ubanner .nx{font-size:12.5px;color:var(--text);line-height:1.45;flex:1;min-width:200px;}
+  .usec{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--rev-navy);margin:20px 0 9px;}
+  .utl{position:relative;margin:4px 0 0 8px;} .utl .st{display:flex;gap:14px;padding-bottom:16px;position:relative;}
+  .utl .st:not(:last-child)::before{content:"";position:absolute;left:6px;top:15px;bottom:-1px;width:2px;background:#E2E8F0;}
+  .utl .st.done:not(:last-child)::before{background:var(--rev-teal);}
+  .utl .dot{width:14px;height:14px;border-radius:50%;border:2px solid #CBD5E1;background:#fff;flex:0 0 auto;margin-top:2px;position:relative;z-index:1;}
+  .utl .st.done .dot{background:var(--rev-teal);border-color:var(--rev-teal);}
+  .utl .st.cur .dot{border-color:var(--rev-blue);box-shadow:0 0 0 4px rgba(29,78,137,.15);background:#fff;}
+  .utl .tt{font-size:13px;font-weight:700;color:var(--text);} .utl .td{font-size:11.5px;color:var(--text-muted);margin-top:1px;} .utl .st.todo .tt{color:var(--text-faint);}
+  .ucards{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .ucd{border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
+  .ucd h4{margin:0 0 8px;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--text-faint);}
+  .ukv{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;padding:3px 0;} .ukv span{color:var(--text-muted);} .ukv b{font-weight:600;text-align:right;}
+  .unbox{background:#FFFBEB;border:1px solid #FDE68A;color:#78350F;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.5;margin-top:8px;}
+  .uflag{background:var(--red-bg);border:1px solid #FECACA;color:var(--red);border-radius:10px;padding:10px 12px;font-size:12.5px;font-weight:600;line-height:1.5;margin-bottom:16px;}
+  tr.cv-row,tr.iv-row{cursor:pointer;}
+  @media(max-width:560px){.ucards{grid-template-columns:1fr;}}
+
   /* ===================== Full Program Schedule modal ===================== */
   .cv-fleet-card .schedule-link,.fleet-card .schedule-link{display:inline-flex;align-items:center;gap:5px;margin-top:12px;
     font-size:11px;font-weight:700;color:var(--rev-blue);cursor:pointer;}
@@ -322,7 +354,7 @@
         <h1>VoltaGrid Delivery Portal</h1>
         <div class="sub">Live production and shipment status for your ICB, GCB and FCB breaker order. Updated as units move through final test and ship.</div>
       </div>
-      <div class="meta">Order <b>M200480</b><br>As of <b id="cvAsOf">Oct 7, 2026</b></div>
+      <div class="meta">Order <b>M200480</b><br>As of <b id="cvAsOf">Oct 9, 2026</b></div>
     </div>
   </div>
 
@@ -339,7 +371,7 @@
       <div class="cv-trend-legend" id="cvTrendLegend"></div>
     </div>
 
-    <div class="cv-section-label">Unit Status<span style="text-transform:none;font-weight:600;color:var(--text-faint);letter-spacing:0;"> &mdash; click a unit for its production timeline</span></div>
+    <div class="cv-section-label">Unit Status<span style="text-transform:none;font-weight:600;color:var(--text-faint);letter-spacing:0;"> &mdash; click a unit for its full details</span></div>
     <div class="cv-toolbar">
       <input type="text" id="cvSearchBox" placeholder="Search unit, serial, tag&hellip;">
       <select id="cvTypeFilter"><option value="">All types</option><option value="ICB">ICB</option><option value="GCB">GCB</option><option value="FCB">FCB</option></select>
@@ -352,7 +384,6 @@
       <tbody id="cvTbody"></tbody>
     </table>
 
-    <div class="cfsub" style="margin:10px 4px 0">Planned Ship dates in grey are the scheduled CAT date; the ship date follows once CAT is complete. TBD = date being re-confirmed.</div>
     <div class="cv-footer">Questions about your order? Contact your <b>REV Engineering</b> account team.</div>
   </div>
 </div>
@@ -394,7 +425,7 @@
       </div>
     </div>
 
-    <div class="section-label">Unit-level detail<span style="text-transform:none;font-weight:600;color:var(--text-faint);letter-spacing:0;"> &mdash; click a unit for its full timeline</span></div>
+    <div class="section-label">Unit-level detail<span style="text-transform:none;font-weight:600;color:var(--text-faint);letter-spacing:0;"> &mdash; click a unit for its full details</span></div>
     <div class="toolbar">
       <input type="text" id="searchBox" placeholder="Search unit or job&hellip;">
       <select id="typeFilter"><option value="">All types</option><option value="ICB">ICB</option><option value="GCB">GCB</option><option value="FCB">FCB</option></select>
@@ -444,6 +475,8 @@
   </div>
 </div>
 
+<div class="usb" id="usb"><div class="usheet" id="usheet"></div></div>
+
 <div class="tooltip" id="tooltip"></div>
 
 <script>
@@ -471,6 +504,8 @@ const CV_RAIL = (()=>{
   });
   return out;
 })();
+/* Customer list excludes the two M200468 GCB units (47A, 48B) that the tracker lists above the M200480-03 block */
+const CV_RECORDS = RECORDS.filter(r=>r.unit!=='GCB-47A' && r.unit!=='GCB-48B');
 const CV_SERIAL = {};
 Object.keys(CV_RAIL).forEach(t=>CV_RAIL[t].forEach(u=>{ CV_SERIAL[t+'-'+u.serialNum] = u; }));
 
@@ -555,7 +590,7 @@ const cvKpiDefs = [
   {key:'totalContracted', val:CV_KPIS.totalContracted, lbl:'Units On Order', sub:'ICB 280 · GCB 230 · FCB 35'},
   {key:'totalShipped', val:CV_KPIS.totalShipped, lbl:'Shipped To Date', sub:Math.round(CV_KPIS.totalShipped/CV_KPIS.totalContracted*100)+'% of order'},
   {key:'totalInPipeline', val:CV_KPIS.totalInPipeline, lbl:'In Production / Testing', sub:'in production, CAT or ready to ship'},
-  {key:'upcoming14d', val:RECORDS.filter(r=>{const p=cvPlanned(r); if(!p.d||r.shipped) return false; const df=(new Date(p.d+'T00:00:00')-new Date('2026-10-07T00:00:00'))/86400000; return df>=0&&df<=14;}).length, lbl:'Planned to Ship (14 days)', sub:'planned or scheduled by Oct 21'},
+  {key:'upcoming14d', val:CV_RECORDS.filter(r=>{const p=cvPlanned(r); if(!p.d||r.shipped) return false; const df=(new Date(p.d+'T00:00:00')-new Date('2026-10-07T00:00:00'))/86400000; return df>=0&&df<=14;}).length, lbl:'Planned to Ship (14 days)', sub:'planned or scheduled by Oct 21'},
 ];
 const cvKpiRow = document.getElementById('cvKpiRow');
 cvKpiDefs.forEach(k=>{
@@ -582,7 +617,7 @@ function cvRenderFleet(){
     const pipeline = CV_KPIS.inPipeline[t];
     const pct = Math.round(shipped/contracted*100);
     // on-schedule heuristic for customer messaging: no units of this type carry an internal flag
-    const hasDelayed = RECORDS.some(r=>r.type===t && r.flag);
+    const hasDelayed = CV_RECORDS.some(r=>r.type===t && r.flag);
     const card = document.createElement('div');
     card.className='cv-fleet-card' + (cvDrill.type===t ? ' active' : '');
     const rad = 34, c = 2*Math.PI*rad;
@@ -627,6 +662,7 @@ const CV_TREND = (()=>{
   const icb = {};
   CV_RAIL.ICB.slice(0, CV_N.ICB).forEach(u=>{ const d=u.actualCAT||u.forecastCAT; if(!d) return; let w=wk(d); if(w>nowWk) w=nowWk; icb[w]=(icb[w]||0)+1; });
   const by={}; TREND.forEach(t=>by[t.week]=Object.assign({},t));
+  if(by['2026-08-17']) by['2026-08-17'].GCB -= 2; // M200468 units 47A/48B shipped 8/20
   Object.keys(icb).forEach(w=>{ by[w]=by[w]||{week:w,ICB:0,GCB:0,FCB:0,total:0}; by[w].ICB=icb[w]; });
   const keys=Object.keys(by).sort(), out=[];
   for(let w=keys[0]; w<=keys[keys.length-1]; w=new Date(new Date(w+'T00:00:00Z').getTime()+7*864e5).toISOString().slice(0,10)){
@@ -741,11 +777,105 @@ function cvRenderChips(){
   }
 }
 
+
+/* ============================================================
+   UNIT DETAIL SIDE PANEL — click any unit row (customer or internal
+   view) to open it. Customer mode uses plain-language stage names and
+   never shows blocker/flag text; internal mode adds the internal stage,
+   flag, tracker dates and RAIL details. ‹ › or ← → step through the
+   units currently listed in the table.
+   ============================================================ */
+const USB = document.getElementById('usb'), USHEET = document.getElementById('usheet');
+const UNIT_ASOF = '2026-10-07';
+let US = {list:[], idx:-1, mode:'cv'};
+const uEsc = x => String(x==null?'':x).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uKv = (k,v)=>`<div class="ukv"><span>${k}</span><b>${v}</b></div>`;
+const uMon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function uFmt(iso){ if(!iso) return '—'; const d=new Date(iso+'T00:00:00'); return uMon[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear(); }
+function uDays(iso){ return Math.round((new Date(iso+'T00:00:00')-new Date(UNIT_ASOF+'T00:00:00'))/86400000); }
+function uWhen(iso){ const d=uDays(iso); return d===0?'today':d>0?`in ${d} day${d>1?'s':''}`:`${-d} day${d<-1?'s':''} ago`; }
+function closeUnit(){ USB.classList.remove('open'); }
+USB.addEventListener('click', e=>{ if(e.target===USB) closeUnit(); });
+document.addEventListener('keydown', e=>{
+  if(!USB.classList.contains('open')) return;
+  if(e.target.matches && e.target.matches('input,textarea,select')) return;
+  if(e.key==='Escape') closeUnit();
+  else if(e.key==='ArrowRight') stepUnit(1);
+  else if(e.key==='ArrowLeft') stepUnit(-1);
+});
+function stepUnit(d){ const i=US.idx+d; if(i>=0 && i<US.list.length) openUnit(US.list[i], US.list, US.mode); }
+
+function uNextStep(r, mode){
+  const x = CV_SERIAL[r.unit] || {};
+  const p = cvPlanned(r);
+  if(r.stage==='Shipped') return r.shipped ? `Shipped on ${uFmt(r.shipped)}.` : 'Shipped.';
+  const plan = p.d ? (p.est ? `CAT is scheduled for ${uFmt(p.d)} (${uWhen(p.d)}); the ship date follows once CAT is complete.`
+                           : `Planned ship ${uFmt(p.d)} (${uWhen(p.d)}).`)
+                   : 'The ship date is being confirmed.';
+  switch(r.stage){
+    case 'CAT Done — Awaiting Ship': return 'Production and testing are complete. '+plan;
+    case 'CAT Ready': return 'Unit is built and ready for customer acceptance testing (CAT). '+plan;
+    case 'Internal Test Ready': return 'Unit is in final internal testing. '+plan;
+    case 'In Production': return 'Unit is in production. '+plan;
+    case 'In the Yard': return 'Unit is in the production queue. '+plan;
+    default: return 'Unit is scheduled in the production queue. '+plan;
+  }
+}
+function uTimeline(r, mode){
+  const labels = mode==='iv' ? IV_STAGE_LABEL : CV_STAGE_LABEL;
+  const x = CV_SERIAL[r.unit] || {}, p = cvPlanned(r);
+  const curIdx = STAGE_ORDER.indexOf(r.stage);
+  const steps = STAGE_ORDER.map((s,i)=>{
+    const done = i<curIdx || (i===curIdx && s==='Shipped');
+    const cur = i===curIdx && !done;
+    const date = STAGE_FIELDS[i] ? r[STAGE_FIELDS[i]] : null;
+    let d;
+    if(date) d = (done ? 'Completed ' : 'Since ')+uFmt(date);
+    else if(s==='Not Started') d = done ? 'Completed' : (x.forecastCAT ? 'CAT scheduled '+uFmt(x.forecastCAT) : 'Scheduled');
+    else d = done ? 'Completed' : cur ? 'In progress' : 'Upcoming';
+    if(s==='CAT Done — Awaiting Ship' && !r.shipped && p.d && !p.est) d += (date?' · ':'')+'Planned ship '+uFmt(p.d);
+    if(s==='Shipped' && !r.shipped) d = p.d ? (p.est ? 'Estimated after CAT · '+uFmt(p.d) : 'Planned '+uFmt(p.d)) : 'Awaiting shipment';
+    return `<div class="st ${done?'done':cur?'cur':'todo'}"><div class="dot"></div><div><div class="tt">${labels[s]}</div><div class="td">${d}</div></div></div>`;
+  });
+  return `<div class="utl">${steps.join('')}</div>`;
+}
+function openUnit(unit, list, mode){
+  const r = RECORDS.find(z=>z.unit===unit); if(!r) return;
+  const iv = mode==='iv';
+  US = {list: list&&list.length?list:[unit], idx: Math.max(0,(list||[unit]).indexOf(unit)), mode};
+  const x = CV_SERIAL[unit] || {}, p = cvPlanned(r);
+  const badge = iv ? `<span class="badge ${stageBadgeClass(r.stage)}">${r.stage}</span>` : `<span class="cv-badge ${cvBadgeClass(r.stage)}">${cvStatus(r)}</span>`;
+  let body = '';
+  if(iv && r.flag) body += `<div class="uflag">⚠ ${uEsc(r.flag)}<div style="font-weight:500;font-size:11.5px;margin-top:2px">Not shown on the customer portal.</div></div>`;
+  body += `<div class="ubanner">${badge}<div class="nx">${uNextStep(r, mode)}${iv?`<div style="margin-top:4px;font-size:11.5px;color:var(--text-muted)">Customer portal shows: <b>${CV_STAGE_LABEL[r.stage]}</b></div>`:''}</div></div>`;
+  body += `<div class="usec" style="margin-top:0">Progress</div>${uTimeline(r, mode)}`;
+  body += `<div class="usec">Details</div><div class="ucards">
+    <div class="ucd"><h4>Unit</h4>${uKv('Unit',uEsc(r.unit))}${uKv('Type',r.type)}${uKv('Job',uEsc(r.job))}${x.batch?uKv('Batch',uEsc(x.batch)):''}</div>
+    <div class="ucd"><h4>Identification</h4>${uKv('REV serial #',uEsc(x.revSerial||'—'))}${uKv('VoltaGrid asset tag',uEsc(x.assetTag||'—'))}${x.seq?uKv('Queue position','#'+x.seq):''}</div>
+    <div class="ucd" style="grid-column:1/-1"><h4>Dates</h4><div class="ucards" style="gap:0 24px">
+      <div>${uKv('CAT scheduled',uFmt(x.forecastCAT))}${uKv('CAT actual',uFmt(x.actualCAT||r.catDone))}</div>
+      <div>${uKv('Planned ship',p.d?uFmt(p.d)+(p.est?' (est.)':''):(r.shipped?'—':'TBD'))}${uKv('Shipped',uFmt(r.shipped))}</div></div></div>`;
+  if(iv){
+    body += `<div class="ucd" style="grid-column:1/-1"><h4>Internal tracker dates</h4><div class="ucards" style="gap:0 24px">
+      <div>${uKv('In the yard',uFmt(r.yard))}${uKv('Production started',uFmt(r.started))}${uKv('Internal test ready',uFmt(r.internalTestReady))}</div>
+      <div>${uKv('CAT ready',uFmt(r.catReady))}${uKv('CAT done',uFmt(r.catDone))}${uKv('Tracker planned ship',uFmt(r.plannedShip))}</div></div></div>`;
+  }
+  body += `</div>`;
+  if(iv && x.note) body += `<div class="usec">RAIL note</div><div class="unbox">${uEsc(x.note)}</div>`;
+  const many = US.list.length>1;
+  USHEET.innerHTML = `<div class="ush"><div><h3>${uEsc(r.unit)}</h3><div class="uss">${r.type} · ${uEsc(r.job)}${iv?' · <b style="color:#92400E">Internal</b>':''}</div></div>
+    <div class="unav">${many?`<button class="uib" id="uP" ${US.idx<=0?'disabled':''} title="Previous (←)">‹</button><button class="uib" id="uN" ${US.idx>=US.list.length-1?'disabled':''} title="Next (→)">›</button>`:''}<button class="uib" id="uX" title="Close (Esc)">✕</button></div></div>
+    <div class="usbody">${body}</div>`;
+  document.getElementById('uX').onclick = closeUnit;
+  const up=document.getElementById('uP'), un=document.getElementById('uN'); if(up) up.onclick=()=>stepUnit(-1); if(un) un.onclick=()=>stepUnit(1);
+  USB.classList.add('open'); USHEET.querySelector('.usbody').scrollTop = 0;
+}
+
 function cvRenderTable(){
   const q = document.getElementById('cvSearchBox').value.trim().toLowerCase();
   const typeVal = document.getElementById('cvTypeFilter').value;
   const statusVal = cvStatusFilter.value;
-  let rows = RECORDS.filter(r=>{
+  let rows = CV_RECORDS.filter(r=>{
     if(!cvMatchesDrill(r)) return false;
     if(typeVal && r.type!==typeVal) return false;
     if(statusVal && cvStatus(r)!==statusVal) return false;
@@ -753,7 +883,7 @@ function cvRenderTable(){
     return true;
   });
   rows.sort((a,b)=> a.type!==b.type ? ['ICB','GCB','FCB'].indexOf(a.type)-['ICB','GCB','FCB'].indexOf(b.type) : (parseInt(a.unit.split('-')[1],10)-parseInt(b.unit.split('-')[1],10)));
-  document.getElementById('cvRowCount').textContent = rows.length+' of '+RECORDS.length+' units';
+  document.getElementById('cvRowCount').textContent = rows.length+' of '+CV_RECORDS.length+' units';
   const tbody = document.getElementById('cvTbody');
   tbody.innerHTML='';
   rows.forEach(r=>{
@@ -761,7 +891,7 @@ function cvRenderTable(){
     const tr = document.createElement('tr');
     tr.className = 'cv-row' + (isOpen ? ' expanded' : '');
     tr.innerHTML = `
-      <td><span class="expand-chevron">&#9654;</span></td>
+      <td><span class="expand-chevron">&#8250;</span></td>
       <td style="font-family:'SFMono-Regular',Consolas,monospace;font-weight:700;">${r.unit}</td>
       <td style="font-family:'SFMono-Regular',Consolas,monospace;font-size:11.5px;">${(CV_SERIAL[r.unit]||{}).revSerial||'—'}</td>
       <td style="font-size:12px;">${(CV_SERIAL[r.unit]||{}).assetTag||'—'}</td>
@@ -769,26 +899,8 @@ function cvRenderTable(){
       <td><span class="cv-badge ${cvBadgeClass(r.stage)}">${cvStatus(r)}</span></td>
       <td${cvPlanned(r).est?' style="color:var(--text-faint);" title="Scheduled CAT date; ship date to be confirmed"':''}>${cvPlanned(r).d?fmtD(cvPlanned(r).d):(r.shipped?'—':'TBD')}</td>
       <td>${fmtD(r.shipped)}</td>`;
-    tr.addEventListener('click', ()=>{
-      if(cvExpanded.has(r.unit)) cvExpanded.delete(r.unit); else cvExpanded.add(r.unit);
-      cvRenderTable();
-    });
+    tr.addEventListener('click', ()=> openUnit(r.unit, rows.map(z=>z.unit), 'cv'));
     tbody.appendChild(tr);
-    if(isOpen){
-      const etr = document.createElement('tr');
-      etr.className = 'cv-expand-row';
-      etr.innerHTML = `<td colspan="8">
-        <div class="timeline-wrap">
-          ${buildTimeline(r, CV_STAGE_LABEL)}
-          <div class="expand-side">
-            <div class="es-row"><span>Job</span><b>${r.job}</b></div>
-            <div class="es-row"><span>Current status</span><b>${cvStatus(r)}</b></div>
-            <div class="es-row"><span>Planned ship</span><b>${cvPlanned(r).d?fmtD(cvPlanned(r).d):'TBD'}</b></div>
-            ${r.shipped?`<div class="es-row"><span>Shipped</span><b>${fmtD(r.shipped)}</b></div>`:''}
-          </div>
-        </div></td>`;
-      tbody.appendChild(etr);
-    }
   });
 }
 cvRenderTable();
@@ -1078,7 +1190,7 @@ function renderTable(){
     const tr = document.createElement('tr');
     tr.className = 'iv-row' + (isOpen ? ' expanded' : '');
     tr.innerHTML = `
-      <td><span class="expand-chevron">&#9654;</span></td>
+      <td><span class="expand-chevron">&#8250;</span></td>
       <td class="unit-id">${r.unit}</td>
       <td><span class="type-pill" style="background:${TYPE_COLOR_HEX[r.type]}">${r.type}</span></td>
       <td><span class="badge ${stageBadgeClass(r.stage)}">${r.stage}</span></td>
@@ -1090,29 +1202,8 @@ function renderTable(){
       <td>${fmtDate(r.shipped)}</td>
       <td>${fmtDate(r.plannedShip)}</td>
       <td>${r.flag ? `<span class="badge blocked">${r.flag}</span>` : '—'}</td>`;
-    tr.addEventListener('click', (e)=>{
-      if(e.target.closest('th')) return;
-      if(ivExpanded.has(r.unit)) ivExpanded.delete(r.unit); else ivExpanded.add(r.unit);
-      renderTable();
-    });
+    tr.addEventListener('click', ()=> openUnit(r.unit, rows.map(z=>z.unit), 'iv'));
     tbody.appendChild(tr);
-    if(isOpen){
-      const etr = document.createElement('tr');
-      etr.className = 'iv-expand-row';
-      etr.innerHTML = `<td colspan="12">
-        <div class="timeline-wrap">
-          ${buildTimeline(r, IV_STAGE_LABEL)}
-          <div class="expand-side">
-            <div class="es-row"><span>Job</span><b>${r.job}</b></div>
-            <div class="es-row"><span>Internal stage</span><b>${r.stage}</b></div>
-            <div class="es-row"><span>Planned ship</span><b>${fmtDate(r.plannedShip)}</b></div>
-            ${r.shipped?`<div class="es-row"><span>Shipped</span><b>${fmtDate(r.shipped)}</b></div>`:''}
-            <div class="expand-cvline">Customer portal shows: <b>${CV_STAGE_LABEL[r.stage]}</b></div>
-            ${r.flag ? `<div class="expand-flagline">${r.flag} — not shown on customer portal</div>` : ''}
-          </div>
-        </div></td>`;
-      tbody.appendChild(etr);
-    }
   });
 }
 renderTable();
